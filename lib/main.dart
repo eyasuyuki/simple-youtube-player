@@ -11,11 +11,10 @@ void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   Route _getRoute(RouteSettings settings) {
-    String videoId;
     switch (settings.name) {
       case '/player':
         return new MaterialPageRoute(builder: (BuildContext context) {
-          return new VideoPlayer(videoId: videoId);
+          return new VideoPlayer(videoId: settings.arguments);
         });
       case '/':
       default:
@@ -49,7 +48,7 @@ class _VideoListState extends State<VideoList> {
   Future<List<YT_API>> _search(String word) async {
     List<YT_API> result = <YT_API>[];
     if (word == null)
-      result = await api.search('', type: 'channel');
+      result = await api.search('', type: 'video');
     else
       result = await api.search(word);
     return result;
