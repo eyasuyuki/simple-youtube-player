@@ -46,18 +46,20 @@ class _VideoListState extends State<VideoList> {
   static YoutubeAPI api = new YoutubeAPI(Constants.key);
   static String word = null;
 
-  Future<List<YT_API>> _search(String word) {
+  Future<List<YT_API>> _search(String word) async {
+    List<YT_API> result = <YT_API>[];
     if (word == null)
-      return api.search(null, type: 'channel');
+      result = await api.search('', type: 'channel');
     else
-      return api.search(word);
+      result = await api.search(word);
+    return result;
   }
 
   List<Widget> _getListItems(List<YT_API> data) {
     if (data == null) return [];
     return new List<Widget>.from(data
         .map((item) => ListTile(
-              leading: Image.network(item.thumbnail['default']),
+              leading: Image.network(item.thumbnail['default']['url']),
               title: Text(item.title),
               subtitle: Text(item.description),
               onTap: () {
