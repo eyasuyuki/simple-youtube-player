@@ -5,12 +5,11 @@ import 'package:youtube_api/youtube_api.dart';
 
 import 'package:flutter_youtube_view/flutter_youtube_view.dart';
 
+import '_constants.dart';
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  static const title = 'Simple YouTube Player';
-  static const search = 'Search';
-
   Route _getRoute(RouteSettings settings) {
     String videoId;
     switch (settings.name) {
@@ -29,7 +28,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: title,
+      title: Constants.title,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -44,8 +43,7 @@ class VideoList extends StatefulWidget {
 }
 
 class _VideoListState extends State<VideoList> {
-  static const key = '<YouTube API Key>'; // Place your API Key
-  static YoutubeAPI api = new YoutubeAPI(key);
+  static YoutubeAPI api = new YoutubeAPI(Constants.key);
   static String word = null;
 
   Future<List<YT_API>> _search(String word) {
@@ -76,11 +74,11 @@ class _VideoListState extends State<VideoList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: new AppBar(
-        title: Text(MyApp.title),
+        title: Text(Constants.title),
         actions: <Widget>[
           new IconButton(
             onPressed: null, //TODO dialog
-            tooltip: MyApp.search,
+            tooltip: Constants.search,
             icon: new Icon(Icons.search),
           ),
         ],
@@ -132,7 +130,7 @@ class VideoPlayer extends StatelessWidget implements YouTubePlayerListener {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(MyApp.title),
+        title: Text(Constants.title),
       ),
       body: Stack(
         children: <Widget>[
