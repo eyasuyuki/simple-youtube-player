@@ -10,52 +10,49 @@ import '_constants.dart';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  Route _getRoute(RouteSettings settings) {
+  Route _route(RouteSettings settings) {
     switch (settings.name) {
       case '/player':
-        return MaterialPageRoute(builder: (BuildContext context) {
-          return VideoPlayer(videoId: settings.arguments);
+        return MaterialPageRoute(builder: (BuildContext ctx) {
+          return Player(id: settings.arguments);
         });
       case '/':
       default:
-        return MaterialPageRoute(builder: (BuildContext context) {
-          return VideoList();
+        return MaterialPageRoute(builder: (BuildContext ctx) {
+          return VList();
         });
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext ctx) {
     return MaterialApp(
-      title: Constants.title,
+      title: Prefs.title,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      onGenerateRoute: _getRoute,
+      onGenerateRoute: _route,
     );
   }
 }
 
-class VideoList extends StatefulWidget {
+class VList extends StatefulWidget {
   @override
-  _VideoListState createState() => _VideoListState();
+  _VListState createState() => _VListState();
 }
 
-class _VideoListState extends State<VideoList> {
-  YoutubeAPI _api = YoutubeAPI(Constants.key);
+class _VListState extends State<VList> {
+  YoutubeAPI _ytApi = YoutubeAPI(Prefs.key);
   String _word = null;
-  TextEditingController _controller = TextEditingController();
+  TextEditingController _ctrl = TextEditingController();
 
   Future<List<YT_API>> _search(String word) async {
-    List<YT_API> result = <YT_API>[];
-    if (word == null)
-      result = await _api.search('', type: 'video');
-    else
-      result = await _api.search(word);
-    return result;
+    return word == null
+        ? await _ytApi.search('', type: 'video')
+        : await _ytApi.search(word);
   }
 
-  List<Widget> _getListItems(List<YT_API> data) {
+  List<Widget> _makeItems(List<YT_API> data) {
     if (data == null) return [];
     return List<Widget>.from(data
         .map((item) => ListTile(
@@ -73,28 +70,34 @@ class _VideoListState extends State<VideoList> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext ctx) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(Constants.title),
+        title: Text(Prefs.title),
         actions: <Widget>[
           IconButton(
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (BuildContext context) {
+                builder: (BuildContext ctx) {
                   return AlertDialog(
-                    title: Text(Constants.search),
+                    title: Text(Prefs.search),
                     content: TextField(
-                      controller: _controller,
+                      controller: _ctrl,
                       autofocus: true,
+                      onSubmitted: (String text) {
+                        setState(() {
+                          _word = text;
+                        });
+                        Navigator.of(context).pop();
+                      },
                     ),
                     actions: <Widget>[
                       FlatButton(
-                        child: Text(Constants.search),
+                        child: Text(Prefs.search),
                         onPressed: () {
                           setState(() {
-                            _word = _controller.value.text;
+                            _word = _ctrl.value.text;
                           });
                           Navigator.of(context).pop();
                         },
@@ -103,15 +106,15 @@ class _VideoListState extends State<VideoList> {
                   );
                 },
               );
-            }, //TODO dialog
-            tooltip: Constants.search,
+            },
+            tooltip: Prefs.search,
             icon: Icon(Icons.search),
           ),
         ],
       ),
       body: FutureBuilder(
         future: _search(_word),
-        builder: (BuildContext context, AsyncSnapshot<List<YT_API>> snapshot) {
+        builder: (BuildContext ctx, AsyncSnapshot<List<YT_API>> snapshot) {
           if (!snapshot.hasData) {
             return Center(
               child: CircularProgressIndicator(
@@ -119,7 +122,7 @@ class _VideoListState extends State<VideoList> {
               ),
             );
           } else {
-            return ListView(children: _getListItems(snapshot.data));
+            return ListView(children: _makeItems(snapshot.data));
           }
         },
       ),
@@ -127,15 +130,24 @@ class _VideoListState extends State<VideoList> {
   }
 }
 
-class VideoPlayer extends StatelessWidget implements YouTubePlayerListener {
-  final String videoId;
-  FlutterYoutubeViewController _controller;
+class Player extends StatefulWidget {
+  final String id;
 
-  void _onYoutubeCreated(FlutterYoutubeViewController controller) {
-    this._controller = controller;
+  Player({this.id});
+
+  _PlayerState createState() => _PlayerState(id: id);
+}
+
+class _PlayerState extends State<Player> implements YouTubePlayerListener {
+  final String id;
+  FlutterYoutubeViewController _ctrl;
+  String _error = '';
+
+  _PlayerState({this.id});
+
+  void _onCreated(FlutterYoutubeViewController ctrl) {
+    this._ctrl = ctrl;
   }
-
-  VideoPlayer({this.videoId});
 
   @override
   void onReady() {}
@@ -144,7 +156,10 @@ class VideoPlayer extends StatelessWidget implements YouTubePlayerListener {
   void onStateChange(String state) {}
 
   @override
-  void onError(String error) {}
+  void onError(String error) {
+    _error = error;
+    setState(() {});
+  }
 
   @override
   void onVideoDuration(double duration) {}
@@ -153,23 +168,23 @@ class VideoPlayer extends StatelessWidget implements YouTubePlayerListener {
   void onCurrentSecond(double second) {}
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext ctx) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(Constants.title),
-      ),
-      body: Stack(
-        children: <Widget>[
-          Container(
-            child: FlutterYoutubeView(
-              onViewCreated: _onYoutubeCreated,
-              listener: this,
-              params: YoutubeParam(
-                  videoId: videoId, showUI: true, startSeconds: 0.0),
+      appBar: AppBar(),
+      body: _error.length > 0
+          ? Center(child: Text('Erorr: $_error'))
+          : Stack(
+              children: <Widget>[
+                Container(
+                  child: FlutterYoutubeView(
+                    onViewCreated: _onCreated,
+                    listener: this,
+                    params: YoutubeParam(
+                        videoId: id, showUI: true, startSeconds: 0.0),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }
