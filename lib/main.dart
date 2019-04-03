@@ -13,13 +13,13 @@ class MyApp extends StatelessWidget {
   Route _getRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/player':
-        return new MaterialPageRoute(builder: (BuildContext context) {
-          return new VideoPlayer(videoId: settings.arguments);
+        return MaterialPageRoute(builder: (BuildContext context) {
+          return VideoPlayer(videoId: settings.arguments);
         });
       case '/':
       default:
-        return new MaterialPageRoute(builder: (BuildContext context) {
-          return new VideoList();
+        return MaterialPageRoute(builder: (BuildContext context) {
+          return VideoList();
         });
     }
   }
@@ -38,25 +38,26 @@ class MyApp extends StatelessWidget {
 
 class VideoList extends StatefulWidget {
   @override
-  _VideoListState createState() => new _VideoListState();
+  _VideoListState createState() => _VideoListState();
 }
 
 class _VideoListState extends State<VideoList> {
-  static YoutubeAPI api = new YoutubeAPI(Constants.key);
-  static String word = null;
+  YoutubeAPI _api = YoutubeAPI(Constants.key);
+  String _word = null;
+  TextEditingController _controller = TextEditingController();
 
   Future<List<YT_API>> _search(String word) async {
     List<YT_API> result = <YT_API>[];
     if (word == null)
-      result = await api.search('', type: 'video');
+      result = await _api.search('', type: 'video');
     else
-      result = await api.search(word);
+      result = await _api.search(word);
     return result;
   }
 
   List<Widget> _getListItems(List<YT_API> data) {
     if (data == null) return [];
-    return new List<Widget>.from(data
+    return List<Widget>.from(data
         .map((item) => ListTile(
               leading: Image.network(item.thumbnail['default']['url']),
               title: Text(item.title),
@@ -74,23 +75,47 @@ class _VideoListState extends State<VideoList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: new AppBar(
+      appBar: AppBar(
         title: Text(Constants.title),
         actions: <Widget>[
-          new IconButton(
-            onPressed: null, //TODO dialog
+          IconButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text(Constants.search),
+                    content: TextField(
+                      controller: _controller,
+                      autofocus: true,
+                    ),
+                    actions: <Widget>[
+                      FlatButton(
+                        child: Text(Constants.search),
+                        onPressed: () {
+                          setState(() {
+                            _word = _controller.value.text;
+                          });
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            }, //TODO dialog
             tooltip: Constants.search,
-            icon: new Icon(Icons.search),
+            icon: Icon(Icons.search),
           ),
         ],
       ),
       body: FutureBuilder(
-        future: _search(word),
+        future: _search(_word),
         builder: (BuildContext context, AsyncSnapshot<List<YT_API>> snapshot) {
           if (!snapshot.hasData) {
             return Center(
               child: CircularProgressIndicator(
-                valueColor: new AlwaysStoppedAnimation<Color>(Colors.blue),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
               ),
             );
           } else {
